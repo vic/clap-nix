@@ -38,14 +38,23 @@ let
 
   opts.int = lib.mkOption { type = lib.types.int; };
 
-  checks = [
-    # (pkgs.stdenvNoCC.mkDerivation {
-    #   name = "all-nixfmt";
-    #   phases = ["check-nixfmt"];
-    #   check-nixfmt = ''
-    #   find ${./..} -type f -iname "*.nix" -print0 | xargs -0 ${pkgs.nixfmt}/bin/nixfmt -c
-    #   '';
-    # })
+  checkNixfmt = builtins.trace pkgs.system
+    (if pkgs.system == "aarch64-darwin" then
+      [ ] # TODO: wait for nixfmt on darwin m1.
+    else
+      [
+        (pkgs.stdenvNoCC.mkDerivation {
+          name = "check-nixfmt";
+          phases = [ "nixfmt" ];
+          nixfmt = ''
+            find ${
+              ./..
+            } -type f -iname "*.nix" -print0 | xargs -0 ${pkgs.nixfmt}/bin/nixfmt -c && touch $out
+          '';
+        })
+      ]);
+
+  checks = checkNixfmt ++ [
 
     (check {
       name = "parse empty argv with empty lsc";
