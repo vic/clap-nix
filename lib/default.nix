@@ -152,16 +152,61 @@ let
     else
       accOpt lsc (rest ++ [ fst ]) acc (lib.tail argv));
 
+  lscOptions = config: deepPath: lsc:
+    let
+      isCmdEnabled = let
+        isEmpty = lib.length deepPath == 0;
+        enabledPath = deepPath ++ [ "enabled" ];
+        default = false;
+        fetchValue = lib.attrByPath enabledPath default config;
+        value = isEmpty || fetchValue;
+      in value;
+
+      subOpt = at: fn:
+        if lib.hasAttr at lsc then {
+          ${at} = lib.mkOption {
+            description = lib.concatStringsSep " " (deepPath ++ [ at ]);
+            default = { };
+            type = lib.types.submodule (args:
+              if isCmdEnabled then {
+                options = lib.mapAttrs fn (lib.attrByPath [ at ] { } lsc);
+              } else
+                { });
+          };
+        } else
+          { };
+
+      mkOption = n: v: v;
+
+      longOpt = subOpt "long" mkOption;
+      shortOpt = subOpt "short" mkOption;
+      commandOpt = subOpt "command" (n: v:
+        {
+          enabled = mkOption n (v.enabled or lib.mkEnableOption n);
+        } // lscOptions config (deepPath ++ [ "command" n ]) v);
+
+    in longOpt // shortOpt // commandOpt;
+
   clap = lsc: argv:
     let
       result = accOpt lsc [ ] [ ] argv;
       optsAcc = result.acc;
       optsSet = lib.foldl lib.recursiveUpdate { } optsAcc;
-      optsMod =
-        (lib.evalModules { modules = [{ options = lsc; }] ++ optsAcc; }).config;
+      optsMod = modules:
+        (lib.evalModules {
+          modules = let
+            optionsModule = ({ config, ... }: {
+              _file = "command line options definition";
+              options = lscOptions config [ ] lsc;
+            });
+            valuesModules =
+              (map (v: v // { _file = "command line arguments"; }) optsAcc);
+          in [ optionsModule ] ++ valuesModules ++ modules;
+        }).config;
+      opts = optsMod [ ];
     in {
       inherit (result) rest;
-      inherit optsAcc optsSet optsMod;
+      inherit optsAcc optsSet optsMod opts;
     };
 
 in clap
