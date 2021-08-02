@@ -126,7 +126,8 @@ let
       let sub = accOpt (lib.getAttr fst command) [ ] [ ] (lib.tail argv);
       in {
         rest = rest ++ sub.rest;
-        acc = acc ++ map (lib.setAttrByPath [ "command" fst ]) sub.acc;
+        acc = acc ++ [ (lib.setAttrByPath [ "command" fst "enabled" ] true) ]
+          ++ map (lib.setAttrByPath [ "command" fst ]) sub.acc;
       }
 
     else if !isDash fst then

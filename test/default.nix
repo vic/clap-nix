@@ -165,7 +165,11 @@ let
       };
       expected = {
         rest = [ ];
-        parsed = [ { long.foo = 42; } { command.bar.long.baz = 23; } ];
+        parsed = [
+          { long.foo = 42; }
+          { command.bar.enabled = true; }
+          { command.bar.long.baz = 23; }
+        ];
       };
     })
 
@@ -178,7 +182,7 @@ let
       };
       expected = {
         rest = [ "--foo" 23 ];
-        parsed = [{ long.foo = 42; }];
+        parsed = [ { long.foo = 42; } { command.bar.enabled = true; } ];
       };
     })
 
