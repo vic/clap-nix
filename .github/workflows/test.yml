@@ -1,4 +1,4 @@
-name: Update
+name: Test
 
 on:
   push:
@@ -16,4 +16,4 @@ jobs:
         extra_nix_config: |
           experimental-features = nix-command flakes
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-    - run: nix build -L --no-link --show-trace -f test
+    - run: nix flake check -L --show-trace

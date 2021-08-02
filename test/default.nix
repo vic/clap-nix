@@ -166,7 +166,7 @@ let
         rest = [];
         parsed = [
           { long.foo = 42; }
-          { command.bar.long.baz = 23; }
+          { command.bar.long.baz = 22; }
         ];
       };
     })
