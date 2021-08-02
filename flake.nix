@@ -1,7 +1,9 @@
 {
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-  inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.flake-utils.inputs.nixpkgs.follows = "nixpkgs";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+    flake-utils.inputs.nixpkgs.follows = "nixpkgs";
+  };
 
   outputs = { self, nixpkgs, flake-utils, ... }@inputs:
     let
@@ -10,6 +12,9 @@
         let
           pkgs = import nixpkgs {
             system =
+              # aarch64-darwin is here just so that vic can run this on his setup.
+              # however, since nixpkgs requires haskell we fallback to x86 while
+              # it's available.
               if system == "aarch64-darwin" then "x86_64-darwin" else system;
           };
 
