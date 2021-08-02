@@ -1,5 +1,5 @@
 { pkgs ? import <nixpkgs> { }, lib ? pkgs.lib
-, clap ? import ./../lib/clap.nix { inherit lib; }, ... }:
+, clap ? import ./../lib/default.nix { inherit lib; }, ... }:
 let
 
   check = { name, argv, lsc, expected, at ? (_: _.optsAcc) }:

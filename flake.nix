@@ -13,13 +13,13 @@
               if system == "aarch64-darwin" then "x86_64-darwin" else system;
           };
 
-          lib = nixpkgs.lib;
+          clap = (pkgs.callPackage ./. { }).clap;
 
-          tests = import ./test { inherit pkgs lib; };
+          tests = pkgs.callPackage ./test { inherit clap; };
 
-          checks =
-            lib.foldl (a: b: a // b) { } (map (t: { ${t.name} = t; }) tests);
+          checks = pkgs.lib.foldl (a: b: a // b) { }
+            (map (t: { ${t.name} = t; }) tests);
 
-        in { inherit checks; });
+        in { inherit clap checks; });
     in flake-utils.lib.eachSystem allSystems perSystem;
 }
