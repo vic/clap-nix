@@ -123,7 +123,7 @@ let
     }
 
     else if lib.isString fst && lib.hasAttr fst command then
-      let sub = accOpt (command.${fst}) [ ] [ ] (lib.tail argv);
+      let sub = accOpt (lib.getAttr fst command) [ ] [ ] (lib.tail argv);
       in {
         rest = rest ++ sub.rest;
         acc = acc ++ map (lib.setAttrByPath [ "command" fst ]) sub.acc;

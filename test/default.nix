@@ -30,8 +30,8 @@ let
           echo -n "with argv: "
           cat $prettyArgvPath
           echo
-          echo -e "diff -y ACTUAL EXPECTED"
-          ${pkgs.diffutils}/bin/diff -y $prettyActualPath $prettyExpectedPath
+          echo -e "diff -y EXPECTED ACTUAL"
+          ${pkgs.diffutils}/bin/diff -u100 $prettyExpectedPath $prettyActualPath | ${pkgs.gitAndTools.delta}/bin/delta --no-gitconfig --side-by-side --keep-plus-minus-markers
           false
         '';
       };
@@ -169,21 +169,18 @@ let
       };
     })
 
-    # (check {
-    #   name = "once a subcommand is found parent options are unknown";
-    #   argv = [ "--foo" 42 "bar" "--foo" 23 ];
-    #   lsc = {
-    #     long.foo = opts.int;
-    #     command.bar.long.baz = opts.int;
-    #   };
-    #   expected = {
-    #     rest = [];
-    #     parsed = [
-    #       { long.foo = 42; }
-    #       { command.bar.long.baz = 23; }
-    #     ];
-    #   };
-    # })
+    (check {
+      name = "once a subcommand is found parent options are unknown";
+      argv = [ "--foo" 42 "bar" "--foo" 23 ];
+      lsc = {
+        long.foo = opts.int;
+        command.bar.long.baz = opts.int;
+      };
+      expected = {
+        rest = [ "--foo" 23 ];
+        parsed = [{ long.foo = 42; }];
+      };
+    })
 
   ];
 
