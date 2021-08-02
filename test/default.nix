@@ -152,7 +152,7 @@ let
       lsc = { short.a = opts.int; };
       expected = {
         rest = [ "--" "-a" "--foo" 42 ];
-        parsed = [];
+        parsed = [ ];
       };
     })
 
@@ -164,14 +164,10 @@ let
         command.bar.long.baz = opts.int;
       };
       expected = {
-        rest = [];
-        parsed = [
-          { long.foo = 42; }
-          { command.bar.long.baz = 23; }
-        ];
+        rest = [ ];
+        parsed = [ { long.foo = 42; } { command.bar.long.baz = 23; } ];
       };
     })
-
 
     # (check {
     #   name = "once a subcommand is found parent options are unknown";

@@ -13,7 +13,7 @@
               if system == "aarch64-darwin" then "x86_64-darwin" else system;
           };
 
-          clap = (pkgs.callPackage ./. { }).clap;
+          clap = pkgs.callPackage ./. { };
 
           tests = pkgs.callPackage ./test { inherit clap; };
 
