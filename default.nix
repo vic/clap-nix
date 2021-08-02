@@ -1,1 +1,1 @@
-{ lib, ... }: import ./lib { inherit lib; }
+{ pkgs, ... }: { clap = pkgs.callPackage ./lib { }; }

@@ -12,11 +12,12 @@ let
           seen = at result;
         })
       ];
-    in if actual == expected then
+      same = actual == expected;
+    in if builtins.trace "* ${name}" same then
       pkgs.stdenvNoCC.mkDerivation {
         name = sname;
-        phases = [ "pass" ];
-        pass = "touch $out";
+        phases = [ "ok" ];
+        ok = "touch $out";
       }
     else
       pkgs.stdenvNoCC.mkDerivation {
@@ -150,6 +151,42 @@ let
     })
 
     (check {
+      name = "non options are collected in rest";
+      argv = [ "hello" 42 true ];
+      lsc = { };
+      expected = {
+        rest = [ "hello" 42 true ];
+        seen = [ ];
+      };
+    })
+
+    (check {
+      name = "long option as last argument is treated as boolean";
+      argv = [ "-a" "--foo" ];
+      lsc = {
+        short.a = opts.int;
+        long.foo = opts.int;
+      };
+      expected = {
+        rest = [ ];
+        seen = [ { short.a = true; } { long.foo = true; } ];
+      };
+    })
+
+    (check {
+      name = "short option as last argument is treated as boolean";
+      argv = [ "--foo" "-a" ];
+      lsc = {
+        short.a = opts.int;
+        long.foo = opts.int;
+      };
+      expected = {
+        rest = [ ];
+        seen = [ { long.foo = true; } { short.a = true; } ];
+      };
+    })
+
+    (check {
       name = "unknown option is just rest";
       argv = [ "-a" "--foo" 42 ];
       lsc = { short.a = opts.int; };
@@ -235,6 +272,54 @@ let
 
           command.bat.enabled = false;
           command.bat.long = { };
+        };
+      };
+    })
+
+    (check {
+      name = "can take an option of default-enabled command";
+      argv = [ "--foo" 42 "--moo" 23 "--baz" 99 ];
+      at = (_: _.opts);
+      lsc = {
+        long.foo = opts.int;
+        command.bar.enabled = true;
+        command.bar.long.baz = opts.int;
+
+        command.bat.long.man = opts.int;
+      };
+      expected = {
+        rest = [ "--moo" 23 ];
+        seen = {
+          long.foo = 42;
+          command.bar.long.baz = 99;
+          command.bar.enabled = true;
+
+          command.bat.enabled = false;
+          command.bat.long = { };
+        };
+      };
+    })
+
+    (check {
+      name = "can take an option of default-enabled subcommand";
+      argv = [ "--foo" 42 "bar" "--moo" 23 "--man" 99 ];
+      at = (_: _.opts);
+      lsc = {
+        long.foo = opts.int;
+        command.bar.long.baz = opts.zero;
+
+        command.bar.command.bat.enabled = true;
+        command.bar.command.bat.long.man = opts.int;
+      };
+      expected = {
+        rest = [ "--moo" 23 ];
+        seen = {
+          long.foo = 42;
+          command.bar.enabled = true;
+          command.bar.long.baz = 0;
+
+          command.bar.command.bat.enabled = true;
+          command.bar.command.bat.long.man = 99;
         };
       };
     })
