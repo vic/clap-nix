@@ -30,7 +30,8 @@ let
           echo -n "with argv: "
           cat $prettyArgvPath
           echo
-          ${pkgs.diffutils}/bin/diff -u100 $prettyActualPath $prettyExpectedPath | ${pkgs.gitAndTools.delta}/bin/delta --no-gitconfig --side-by-side --paging=never
+          echo -e "diff -y ACTUAL EXPECTED"
+          ${pkgs.diffutils}/bin/diff -y $prettyActualPath $prettyExpectedPath
           false
         '';
       };
@@ -166,7 +167,7 @@ let
         rest = [];
         parsed = [
           { long.foo = 42; }
-          { command.bar.long.baz = 22; }
+          { command.bar.long.baz = 23; }
         ];
       };
     })
