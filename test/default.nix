@@ -9,7 +9,7 @@ let
         (clap lsc)
         (result: {
           inherit (result) rest;
-          parsed = at result;
+          seen = at result;
         })
       ];
     in if actual == expected then
@@ -65,7 +65,7 @@ let
       argv = [ ];
       lsc = { };
       expected = {
-        parsed = [ ];
+        seen = [ ];
         rest = [ ];
       };
     })
@@ -76,7 +76,7 @@ let
       lsc = { long.foo = opts.int; };
       expected = {
         rest = [ ];
-        parsed = [{ long.foo = 42; }];
+        seen = [{ long.foo = 42; }];
       };
     })
 
@@ -90,7 +90,7 @@ let
       };
       expected = {
         rest = [ ];
-        parsed = [ { long.foo = true; } { long.bar = 42; } ];
+        seen = [ { long.foo = true; } { long.bar = 42; } ];
       };
     })
 
@@ -104,7 +104,7 @@ let
       };
       expected = {
         rest = [ ];
-        parsed = [ { long.foo = true; } { short.b = 42; } ];
+        seen = [ { long.foo = true; } { short.b = 42; } ];
       };
     })
 
@@ -118,7 +118,7 @@ let
       };
       expected = {
         rest = [ ];
-        parsed = [ { long.foo = true; } { short.b = 42; } ];
+        seen = [ { long.foo = true; } { short.b = 42; } ];
       };
     })
 
@@ -132,7 +132,7 @@ let
       };
       expected = {
         rest = [ ];
-        parsed = [ { short.a = true; } { short.b = true; } { short.c = 42; } ];
+        seen = [ { short.a = true; } { short.b = true; } { short.c = 42; } ];
       };
     })
 
@@ -145,7 +145,7 @@ let
       };
       expected = {
         rest = [ ];
-        parsed = [ { short.a = true; } { long.foo = 42; } ];
+        seen = [ { short.a = true; } { long.foo = 42; } ];
       };
     })
 
@@ -155,7 +155,7 @@ let
       lsc = { short.a = opts.int; };
       expected = {
         rest = [ "--foo" 42 ];
-        parsed = [{ short.a = true; }];
+        seen = [{ short.a = true; }];
       };
     })
 
@@ -165,7 +165,7 @@ let
       lsc = { short.a = opts.int; };
       expected = {
         rest = [ "--" "-a" "--foo" 42 ];
-        parsed = [ ];
+        seen = [ ];
       };
     })
 
@@ -178,7 +178,7 @@ let
       };
       expected = {
         rest = [ ];
-        parsed = [
+        seen = [
           { long.foo = 42; }
           { command.bar.enabled = true; }
           { command.bar.long.baz = 23; }
@@ -195,7 +195,7 @@ let
       };
       expected = {
         rest = [ "--foo" 23 ];
-        parsed = [ { long.foo = 42; } { command.bar.enabled = true; } ];
+        seen = [ { long.foo = 42; } { command.bar.enabled = true; } ];
       };
     })
 
@@ -209,7 +209,7 @@ let
       };
       expected = {
         rest = [ "--foo" 23 ];
-        parsed = {
+        seen = {
           long.foo = 42;
           command.bar.enabled = true;
           command.bar.long.baz = 99;
@@ -228,7 +228,7 @@ let
       };
       expected = {
         rest = [ "--moo" 23 ];
-        parsed = {
+        seen = {
           long.foo = 42;
           command.bar.enabled = true;
           command.bar.long.baz = 99;

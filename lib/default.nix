@@ -30,17 +30,16 @@
 #
 #    optsSet    A single attribute set equivalent to merging all of optsAcc.
 #
-#    optsMod    Evaluates a module with lsc as options and optsAcc as config modules.
+#    optsMod    A Nix module that can be used with `lib.evalModules`.
 #
 #               The purpose of `optsAcc` being an array of attributes is that you can later use
-#               with `lib.evalModules` if you need any option to be accumulative (as per its lib.type.mkOption merge function).
+#               with `lib.evalModules { modules = [ optsMod ]; }` if you need any option to be mergable
+#               (as per its lib.type.mkOption merge function) for example a `--verbose` flag.
 #               otherwise if you dont' need config resolution, you can just reduce them into a single
-#               attribute like: `lib.foldLeft lib.recursiveUpdate {} acc`.
+#               attribute like `optsSet` does: `lib.foldLeft lib.recursiveUpdate {} optsAcc`.
 #
 #  }
 #
-#
-# See default.nix for higher level functions.
 #
 # Long options have a double dash before them.
 #
@@ -62,8 +61,7 @@
 
 { lib }:
 let
-  accOpt = lib.fix (accOpt:
-    lsc@{ long ? { }, short ? { }, command ? { } }:
+  accOpt = lsc@{ long ? { }, short ? { }, command ? { } }:
     rest: acc: argv:
     let
 
@@ -150,26 +148,21 @@ let
       accOpt lsc rest (accAt fstShort snd) (fstShort.rem ++ lib.drop 2 argv)
 
     else
-      accOpt lsc (rest ++ [ fst ]) acc (lib.tail argv));
+      accOpt lsc (rest ++ [ fst ]) acc (lib.tail argv);
 
-  lscOptions = config: deepPath: lsc:
+  lscOptions = config: cmdPath: lsc:
     let
-      isCmdEnabled = let
-        isEmpty = lib.length deepPath == 0;
-        enabledPath = deepPath ++ [ "enabled" ];
-        default = false;
-        fetchValue = lib.attrByPath enabledPath default config;
-        value = isEmpty || fetchValue;
-      in value;
+      isCmdEnabled = lib.length cmdPath == 0
+        || lib.attrByPath (cmdPath ++ [ "enabled" ]) false config;
 
       subOpt = at: fn:
         if lib.hasAttr at lsc then {
           ${at} = lib.mkOption {
-            description = lib.concatStringsSep " " (deepPath ++ [ at ]);
+            description = lib.concatStringsSep " " (cmdPath ++ [ at ]);
             default = { };
             type = lib.types.submodule (args:
               if isCmdEnabled then {
-                options = lib.mapAttrs fn (lib.attrByPath [ at ] { } lsc);
+                options = lib.mapAttrs fn lsc.${at};
               } else
                 { });
           };
@@ -183,7 +176,7 @@ let
       commandOpt = subOpt "command" (n: v:
         {
           enabled = mkOption n (v.enabled or lib.mkEnableOption n);
-        } // lscOptions config (deepPath ++ [ "command" n ]) v);
+        } // lscOptions config (cmdPath ++ [ "command" n ]) v);
 
     in longOpt // shortOpt // commandOpt;
 
@@ -192,18 +185,17 @@ let
       result = accOpt lsc [ ] [ ] argv;
       optsAcc = result.acc;
       optsSet = lib.foldl lib.recursiveUpdate { } optsAcc;
-      optsMod = modules:
-        (lib.evalModules {
-          modules = let
-            optionsModule = ({ config, ... }: {
-              _file = "command line options definition";
-              options = lscOptions config [ ] lsc;
-            });
-            valuesModules =
-              (map (v: v // { _file = "command line arguments"; }) optsAcc);
-          in [ optionsModule ] ++ valuesModules ++ modules;
-        }).config;
-      opts = optsMod [ ];
+      optsMod = let
+        optionsModule = ({ config, ... }: {
+          _file = "command line options definition";
+          options = lscOptions config [ ] lsc;
+        });
+        prettyArgv = lib.generators.toPretty { multiline = false; } argv;
+        valuesModules =
+          (map (v: v // { _file = "command line arguments: ${prettyArgv}"; })
+            optsAcc);
+      in { imports = [ optionsModule ] ++ valuesModules; };
+      opts = (lib.evalModules { modules = [ optsMod ]; }).config;
     in {
       inherit (result) rest;
       inherit optsAcc optsSet optsMod opts;
