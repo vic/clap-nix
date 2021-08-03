@@ -23,12 +23,12 @@ This library provides a `clap` Nix function for parsing command line arguments i
 
 - Options are specified by virtue of Nix `lib.mkOption` and `lib.types`. 
   Meaning your options can provide defaults, value 
-  coercions, aggregation or be compositions of different types.
+  coercions, aggregation or a composition of different types.
 
 - Leverages the power of `lib.evalModules` so you can define
   option aliases (eg, `-h` and `--help` having the same value)
   or define your own config by providing custom Nix modules and
-  using `lib.mkIf` and friends.
+  use `lib.mkIf` and friends.
   
 - Supports typed positional arguments on each command.
 
@@ -102,7 +102,7 @@ in
 ```
 
 
-### The return value `clap`.
+### The `clap` return value.
 
 The following is an annotated attribute set with the values returned to you by `clap`:
 
@@ -181,7 +181,7 @@ let
   intOption = mkOption { type = lib.types.int; };
 in
 {
-  short.a = intOption
+  short.a = intOption;
   
   # auto-enable this command by default, so that the user can directly use `-b` without naming `foo`
   command.foo.enabled = true;
