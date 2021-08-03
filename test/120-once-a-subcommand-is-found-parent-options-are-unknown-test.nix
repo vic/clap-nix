@@ -3,7 +3,7 @@
 {
   name = "once a subcommand is found parent options are unknown";
   argv = [ "--foo" 42 "bar" "--foo" 23 ];
-  lsc = {
+  slac = {
     long.foo = opts.int;
     command.bar.long.baz = opts.int;
   };

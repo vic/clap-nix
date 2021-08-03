@@ -1,7 +1,7 @@
 { lib, ... }: {
-  name = "parse empty argv with empty lsc";
+  name = "parse empty argv with empty slac";
   argv = [ ];
-  lsc = { };
+  slac = { };
   expected = {
     seen = [ ];
     rest = [ ];

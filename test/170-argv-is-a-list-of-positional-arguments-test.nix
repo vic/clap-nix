@@ -4,7 +4,7 @@
   name = "argv is a list of positional arguments";
   argv = [ "--foo" "A" "-b" "y" "B" "C" "D" ];
   at = (_: _.opts);
-  lsc = {
+  slac = {
     short.b = opts.val "y";
     argv = [ (typs.val "A") ];
 

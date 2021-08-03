@@ -3,7 +3,7 @@
 {
   name = "long option as last argument is treated as boolean";
   argv = [ "-a" "--foo" ];
-  lsc = {
+  slac = {
     short.a = opts.int;
     long.foo = opts.int;
   };

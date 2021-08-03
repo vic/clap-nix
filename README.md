@@ -37,10 +37,11 @@ This library provides a `clap` Nix function for parsing command line arguments i
 - Made with <3 by [oeiuwq](https://twitter.com/oeiuwq).
 
 
-### The `{long ? {}, short ? {}, command ? {}, ...}` tree.
+### The slac tree made of `{ short ? {}, long ? {}, argv ? [], command ? {}, ...}` 
 
-An `lsc` tree describes the structure of the command line interface
-that will be parsed using the `clap` Nix function.
+An `slac` tree describes the structure of the command line interface
+that will be parsed using the `clap` Nix function:
+
 
 ``` nix
 {
@@ -63,7 +64,7 @@ that will be parsed using the `clap` Nix function.
     (lib.types.separatedString ":")
   ];
   
-  # an optional attribute set of sub-commands and their `lsc` tree.
+  # an optional attribute set of sub-commands and their `slac` tree.
   command = {
     show = {
       long = {
@@ -78,21 +79,21 @@ that will be parsed using the `clap` Nix function.
 
 ### Calling the `clap` function.
 
-Once you have your `lsc` tree definition, you are ready to invoke `clap` with some
+Once you have your `slac` tree definition, you are ready to invoke `clap` with some
 command line arguments.
 
 ``` nix
 { clap, ... }:
 let
-  lsc = {...}; # the attribute set from the snippet above.
+  slac = {...}; # the attribute set from the snippet above.
 
   ####
   # The important thing on this snipped is how to invoke the `clap` function:
   # 
-  # The firsr argument is the `lsc` tree structure that defines the CLI design.
+  # The firsr argument is the `slac` tree structure that defines the CLI design.
   # Second argument is a list of Nix values (not just strings) representing 
   # the user entered command line arguments.
-  cli = clap lsc [ "--help" ];
+  cli = clap slac [ "--help" ];
 in
   # More on `clap` return value in the following section.
   if cli.opts.long.help then
@@ -118,7 +119,7 @@ The following is an annotated attribute set with the values returned to you by `
   
   # Typically you'd want to inspect the `opts` attribute in order to
   # know what options the user assigned values to. 
-  # Notice that it basically follows the same structure a `lsc` has. 
+  # Notice that it basically follows the same structure a `slac` has. 
   #
   # Note: Accessing `opts` will make sure that all options correspond to
   # their defined type, by virtue of using `lib.evalModules` -more on this later-,
@@ -146,7 +147,7 @@ The following is an annotated attribute set with the values returned to you by `
   ##-# That's it. The attributes bellow are lower level representations of the
   # `opts` set. But could be useful anyways to you:
   
-  optsSet = {}; # Another lsc-like set. *BUT* this one is not type-checked at all.
+  optsSet = {}; # Another slac-like set. *BUT* this one is not type-checked at all.
 
   optsMod = {}; # A Nix Module that contains all the options declarations and definitions.
                 #

@@ -4,7 +4,7 @@
   name = "can take an option of default-enabled subcommand";
   argv = [ "--foo" 42 "bar" "--moo" 23 "--man" 99 ];
   at = (_: _.opts);
-  lsc = {
+  slac = {
     long.foo = opts.int;
     command.bar.long.baz = opts.zero;
 

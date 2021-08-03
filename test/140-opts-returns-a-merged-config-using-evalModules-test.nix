@@ -4,7 +4,7 @@
   name = "opts returns a merged config using evalModules";
   argv = [ "--foo" 42 "bar" "--moo" 23 "--baz" 99 ];
   at = (_: _.opts);
-  lsc = {
+  slac = {
     long.foo = opts.int;
     command.bar.long.baz = opts.int;
     command.bat.long.man = opts.int;

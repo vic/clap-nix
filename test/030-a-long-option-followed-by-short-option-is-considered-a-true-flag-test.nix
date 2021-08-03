@@ -3,7 +3,7 @@
 {
   name = "a long option followed by a short option is considered a true flag";
   argv = [ "--foo" "-b" 42 ];
-  lsc = {
+  slac = {
     long.foo = opts.int;
     short.b = opts.int;
   };

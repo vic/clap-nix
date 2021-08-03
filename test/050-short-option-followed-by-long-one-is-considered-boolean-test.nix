@@ -3,7 +3,7 @@
 {
   name = "short option followed by long one is considered boolean";
   argv = [ "-a" "--foo" 42 ];
-  lsc = {
+  slac = {
     short.a = opts.int;
     long.foo = opts.int;
   };

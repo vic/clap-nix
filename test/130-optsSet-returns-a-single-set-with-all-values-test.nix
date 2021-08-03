@@ -4,7 +4,7 @@
   name = "optsSet returns a single set with all values";
   argv = [ "--foo" 42 "bar" "--foo" 23 "--baz" 99 ];
   at = (_: _.optsSet);
-  lsc = {
+  slac = {
     long.foo = opts.int;
     command.bar.long.baz = opts.int;
   };

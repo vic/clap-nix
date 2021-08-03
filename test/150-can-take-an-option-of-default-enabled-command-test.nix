@@ -4,7 +4,7 @@
   name = "can take an option of default-enabled command";
   argv = [ "--foo" 42 "--moo" 23 "--baz" 99 ];
   at = (_: _.opts);
-  lsc = {
+  slac = {
     long.foo = opts.int;
     command.bar.enabled = true;
     command.bar.long.baz = opts.int;

@@ -3,7 +3,7 @@
 {
   name = "last short option in combo takes the argument value";
   argv = [ "-abc" 42 ];
-  lsc = {
+  slac = {
     short.a = opts.int;
     short.b = opts.int;
     short.c = opts.int;

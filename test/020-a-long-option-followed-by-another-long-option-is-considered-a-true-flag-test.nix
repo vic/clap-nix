@@ -4,7 +4,7 @@
   name =
     "a long option followed by another long option is considered a true flag";
   argv = [ "--foo" "--bar" 42 ];
-  lsc = {
+  slac = {
     long.foo = opts.int;
     long.bar = opts.int;
   };

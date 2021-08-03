@@ -1,9 +1,9 @@
 { lib, pkgs, clap, ... }:
-{ name, argv, lsc, expected, at ? (_: _.optsAcc) }:
+{ name, argv, slac, expected, at ? (_: _.optsAcc) }:
 let
   sname = lib.strings.sanitizeDerivationName name;
   actual = lib.pipe argv [
-    (clap lsc)
+    (clap slac)
     (result: {
       inherit (result) rest;
       seen = at result;
