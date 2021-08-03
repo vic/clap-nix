@@ -177,18 +177,16 @@ let
         || lib.attrByPath (cmdPath ++ [ "enabled" ]) false config;
 
       subOpt = at: fn:
-        if lib.hasAttr at slac then {
+        lib.optionalAttrs (lib.hasAttr at slac) {
           ${at} = lib.mkOption {
             description = lib.concatStringsSep " " (cmdPath ++ [ at ]);
             default = { };
             type = lib.types.submodule (args:
-              if isCmdEnabled then {
+              lib.optionalAttrs isCmdEnabled {
                 options = lib.mapAttrs fn slac.${at};
-              } else
-                { });
+              });
           };
-        } else
-          { };
+        };
 
       longOpt = subOpt "long" ensureOption;
       shortOpt = subOpt "short" ensureOption;
@@ -197,14 +195,13 @@ let
           enabled = ensureOption n v.enabled or (lib.mkEnableOption n);
         } // slacOptions config (cmdPath ++ [ "command" n ]) v);
 
-      argvOpt = if slac ? argv then {
+      argvOpt = lib.optionalAttrs (slac ? argv) {
         argv = lib.mkOption {
           description = lib.concatStringsSep " " (cmdPath ++ [ "argv" ]);
           default = [ ];
           type = lib.types.listOf (lib.types.oneOf slac.argv);
         };
-      } else
-        { };
+      };
 
     in longOpt // shortOpt // commandOpt // argvOpt;
 
