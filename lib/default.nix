@@ -47,35 +47,58 @@ let
       path = [ "short" str ];
     };
 
+  getArg = s: argv: seen:
+    let
+      argvLen = lib.length argv;
+      seenLen = lib.length (lib.filter (lib.hasAttr "argv") seen);
+    in if argvLen == 0 || seenLen >= argvLen then
+      null
+    else if !(builtins.elemAt argv seenLen).check s then
+      null
+    else {
+      path = [ "argv" ];
+    };
+
   longAt = fst: lsc: getLong "--" fst (lsc.long or { });
   longNoAt = fst: lsc: getLong "--no-" fst (lsc.long or { });
   shortAt = fst: lsc: getShort fst (lsc.short or { });
+  argAt = fst: lsc: seen: getArg fst (lsc.argv or [ ]) seen;
   commandAt = fst: lsc:
     if lib.isString fst then
       lib.attrByPath [ "command" fst ] null lsc
     else
       null;
 
-  isDefinedAt = fst: lsc:
-    let
-      noLong = (longAt fst lsc) == null;
-      noLongNo = (longNoAt fst lsc) == null;
-      noShort = (shortAt fst lsc) == null;
-      noCommand = (commandAt fst lsc) == null;
-    in !(noLong && noLongNo && noShort && noCommand);
+  fstAt = fst: lsc: seen: rec {
+    long = longAt fst lsc;
+    longNo = longNoAt fst lsc;
+    short = shortAt fst lsc;
+    command = commandAt fst lsc;
+    arg = argAt fst lsc seen;
+    isDefined =
+      lib.length (lib.filter (_: _ != null) [ long longNo short command arg ])
+      > 0;
+  };
 
   isEnabled = lsc: (lsc.enabled or lsc.enabled.default or false) == true;
 
-  findDefinedAtEnabled = acc: fst: lsc:
-    if isDefinedAt fst lsc then
+  findDefinedAtEnabled = acc: fst: lsc: seen:
+    if (fstAt fst lsc seen).isDefined then
       acc
     else
       lib.concatMap (cmd:
         if !isEnabled lsc.command.${cmd} then
           [ ]
         else
-          findDefinedAtEnabled (acc ++ [ "command" cmd ]) fst
-          lsc.command.${cmd}) (lib.attrNames (lsc.command or { }));
+          findDefinedAtEnabled (acc ++ [ "command" cmd ]) fst lsc.command.${cmd}
+          seen) (lib.attrNames (lsc.command or { }));
+
+  argvAcc = acc:
+    let
+      parted = lib.partition (lib.hasAttr "argv") acc;
+      values = map (_: _.argv) parted.right;
+      argv = if lib.length values > 0 then [{ argv = values; }] else [ ];
+    in argv ++ parted.wrong;
 
   accOpt = lsc: rest: acc: argv:
     let
@@ -86,62 +109,64 @@ let
       fst = lib.elemAt argv 0;
       snd = lib.elemAt argv 1;
 
-      fstLong = longAt fst lsc;
-      fstLongNo = longNoAt fst lsc;
-      fstShort = shortAt fst lsc;
-      fstCommand = commandAt fst lsc;
-
-      isFstNotHere = !isDefinedAt fst lsc;
-      fstDefinedPath = findDefinedAtEnabled [ ] fst lsc;
+      fstHere = fstAt fst lsc acc;
+      fstEnabledPath = findDefinedAtEnabled [ ] fst lsc [ ];
 
       accAt = at: val: acc ++ [ (lib.setAttrByPath at.path val) ];
 
     in if isEmpty then {
-      inherit rest acc;
+      inherit rest;
+      acc = argvAcc acc;
     }
 
     else if fst == "--" then {
-      inherit acc;
+      acc = argvAcc acc;
       rest = rest ++ argv;
     }
 
-    else if fstCommand != null then
-      let sub = accOpt fstCommand [ ] [ ] (lib.tail argv);
+    else if fstHere.command != null then
+      let sub = accOpt fstHere.command [ ] [ ] (lib.tail argv);
       in {
         rest = rest ++ sub.rest;
-        acc = acc ++ [ (lib.setAttrByPath [ "command" fst "enabled" ] true) ]
+        acc = (argvAcc acc)
+          ++ [ (lib.setAttrByPath [ "command" fst "enabled" ] true) ]
           ++ map (lib.setAttrByPath [ "command" fst ]) sub.acc;
       }
 
-    else if isFstNotHere && lib.length fstDefinedPath > 0 then
+    else if !fstHere.isDefined && lib.length fstEnabledPath > 0 then
       let
-        cmd = lib.attrByPath fstDefinedPath { } lsc;
+        cmd = lib.attrByPath fstEnabledPath { } lsc;
         sub = accOpt cmd [ ] [ ] argv;
-        enabledPath = fstDefinedPath ++ [ "enabled" ];
+        enabledPath = fstEnabledPath ++ [ "enabled" ];
       in {
         rest = rest ++ sub.rest;
-        acc = acc ++ [ (lib.setAttrByPath enabledPath true) ]
-          ++ map (lib.setAttrByPath fstDefinedPath) sub.acc;
+        acc = (argvAcc acc) ++ [ (lib.setAttrByPath enabledPath true) ]
+          ++ map (lib.setAttrByPath fstEnabledPath) sub.acc;
       }
+
+    else if fstHere.arg != null then
+      accOpt lsc rest (accAt fstHere.arg fst) (lib.tail argv)
 
     else if !lib.isString fst || !isDash fst then
       accOpt lsc (rest ++ [ fst ]) acc (lib.tail argv)
 
-    else if fstLongNo != null then
-      accOpt lsc rest (accAt fstLongNo false) (lib.tail argv)
+    else if fstHere.longNo != null then
+      accOpt lsc rest (accAt fstHere.longNo false) (lib.tail argv)
 
-    else if fstLong != null && (lib.length argv == 1 || isDash snd) then
-      accOpt lsc rest (accAt fstLong true) (lib.tail argv)
+    else if fstHere.long != null && (lib.length argv == 1 || isDash snd) then
+      accOpt lsc rest (accAt fstHere.long true) (lib.tail argv)
 
-    else if fstLong != null then
-      accOpt lsc rest (accAt fstLong snd) (lib.drop 2 argv)
+    else if fstHere.long != null then
+      accOpt lsc rest (accAt fstHere.long snd) (lib.drop 2 argv)
 
-    else if fstShort != null && (lib.length argv == 1 || isDash snd
-      || builtins.length fstShort.rem > 0) then
-      accOpt lsc rest (accAt fstShort true) (fstShort.rem ++ lib.tail argv)
+    else if fstHere.short != null && (lib.length argv == 1 || isDash snd
+      || builtins.length fstHere.short.rem > 0) then
+      accOpt lsc rest (accAt fstHere.short true)
+      (fstHere.short.rem ++ lib.tail argv)
 
-    else if fstShort != null then
-      accOpt lsc rest (accAt fstShort snd) (fstShort.rem ++ lib.drop 2 argv)
+    else if fstHere.short != null then
+      accOpt lsc rest (accAt fstHere.short snd)
+      (fstHere.short.rem ++ lib.drop 2 argv)
 
     else
       accOpt lsc (rest ++ [ fst ]) acc (lib.tail argv);
@@ -172,7 +197,16 @@ let
           enabled = ensureOption n v.enabled or (lib.mkEnableOption n);
         } // lscOptions config (cmdPath ++ [ "command" n ]) v);
 
-    in longOpt // shortOpt // commandOpt;
+      argvOpt = if lsc ? argv then {
+        argv = lib.mkOption {
+          description = lib.concatStringsSep " " (cmdPath ++ [ "argv" ]);
+          default = [ ];
+          type = lib.types.listOf (lib.types.oneOf lsc.argv);
+        };
+      } else
+        { };
+
+    in longOpt // shortOpt // commandOpt // argvOpt;
 
   clap = lsc: argv:
     let
@@ -180,15 +214,15 @@ let
       optsAcc = result.acc;
       optsSet = lib.foldl lib.recursiveUpdate { } optsAcc;
       optsMod = let
-        optionsModule = ({ config, ... }: {
+        declarations = ({ config, ... }: {
           _file = "command line options definition";
           options = lscOptions config [ ] lsc;
         });
         prettyArgv = lib.generators.toPretty { multiline = false; } argv;
-        valuesModules =
+        definitions =
           (map (v: v // { _file = "command line arguments: ${prettyArgv}"; })
             optsAcc);
-      in { imports = [ optionsModule ] ++ valuesModules; };
+      in { imports = [ declarations ] ++ definitions; };
       opts = (lib.evalModules { modules = [ optsMod ]; }).config;
     in {
       inherit (result) rest;

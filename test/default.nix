@@ -3,7 +3,7 @@
 let
 
   check = pkgs.callPackage ./check.nix { inherit clap; };
-  opts = pkgs.callPackage ./opts.nix { };
+  inherit (pkgs.callPackage ./opts.nix { }) opts typs;
 
   checkNixfmt = builtins.trace pkgs.system
     (if pkgs.system == "aarch64-darwin" then
@@ -25,7 +25,7 @@ let
     (lib.filesystem.listFilesRecursive ./.);
 
   checkFiles =
-    map (f: check (import f { inherit lib pkgs clap opts; })) testFiles;
+    map (f: check (import f { inherit lib pkgs clap opts typs; })) testFiles;
 
   checks = checkNixfmt ++ checkFiles;
 

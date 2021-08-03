@@ -29,6 +29,8 @@ This library provides a `clap` Nix function for parsing command line arguments i
   option aliases (eg, `-h` and `--help` having the same value)
   or define your own config by providing custom Nix modules and
   using `lib.mkIf` and friends.
+  
+- Supports typed positional arguments on each command.
 
 - Distributed as a flake or legacy library.
 
@@ -42,7 +44,7 @@ that will be parsed using the `clap` Nix function.
 
 ``` nix
 {
-  # an attribute set of one letter options
+  # an optional attribute set of one letter options
   short = {
     f = lib.mkOption {
       description = "file";
@@ -50,18 +52,24 @@ that will be parsed using the `clap` Nix function.
     };
   };
 
-  # an attribute set of long options
+  # an optional attribute set of long options
   long = {
     help = lib.mkEnableOption "help";
   };
   
-  # and attribute set of sub-commands and their `lsc` tree.
+  # an optional list of positional typed arguments
+  argv = [
+    lib.types.int
+    (lib.types.separatedString ":")
+  ];
+  
+  # an optional attribute set of sub-commands and their `lsc` tree.
   command = {
     show = {
       long = {
         pretty = lib.mkEnableOption "pretty print";
       };
-      # ... other short, or command sets.
+      # ... other nested `short`, `command` or `argv`
     };
   };
 }
@@ -76,7 +84,7 @@ command line arguments.
 ``` nix
 { clap, ... }:
 let
-  lsc = # the attribute set from the snippet above.
+  lsc = {...}; # the attribute set from the snippet above.
 
   ####
   # The important thing on this snipped is how to invoke the `clap` function:
@@ -105,7 +113,7 @@ The following is an annotated attribute set with the values returned to you by `
   # Also, if `clap` finds the string `--` in the command line arguments,
   # it will stop further processing, so `--` and it's following arguments
   # will be in `rest` untouched.
-  rest = [ ];
+  rest = [ "--" "skipped-values" ];
   
   
   # Typically you'd want to inspect the `opts` attribute in order to
@@ -119,6 +127,8 @@ The following is an annotated attribute set with the values returned to you by `
     # here you'll find `long` and `short` options assigned to their values.
     long = { help = false; };             # from `--no-help`
     short = { f = /home/vic/some-file; }; # from `-f /home/vic/some-file`
+    
+    argv = [ 42 "foo:bar" ]; # from positional arguments matching types
     
     # commands also map to their resolved values.
     command = {
