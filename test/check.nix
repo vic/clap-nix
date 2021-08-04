@@ -1,5 +1,5 @@
 { lib, pkgs, clap, ... }:
-{ name, slac, expected, argv ? [ ], fn ? (cli: argv: cli argv)
+{ name, slac, expected, argv ? [ ], fn ? (cli: argv: cli argv), skip ? null
 , at ? (_: _.optsAcc), ... }:
 let
   sname = lib.strings.sanitizeDerivationName name;
@@ -12,12 +12,19 @@ let
     })
   ];
   same = actual == expected;
-in if builtins.trace "* ${name}" same then
-  pkgs.stdenvNoCC.mkDerivation {
-    name = sname;
-    phases = [ "ok" ];
-    ok = "touch $out";
-  }
+  msg = label: msg:
+    pkgs.stdenvNoCC.mkDerivation {
+      name = sname;
+      phases = [ label ];
+      ${label} = ''
+        echo "${msg}"
+        touch $out
+      '';
+    };
+in if lib.isString skip then
+  msg "skip" skip
+else if same then
+  msg "ok" name
 else
   pkgs.stdenvNoCC.mkDerivation {
     name = sname;
