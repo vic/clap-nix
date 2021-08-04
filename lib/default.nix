@@ -205,16 +205,19 @@ let
 
     in longOpt // shortOpt // commandOpt // argvOpt;
 
-  clap = slac: argv:
+  optsDeclarations = slac:
+    ({ config, ... }: {
+      _file = "command line options definition";
+      options = slacOptions config [ ] slac;
+    });
+
+  clapParse = slac: argv:
     let
       result = accOpt slac [ ] [ ] argv;
       optsAcc = result.acc;
       optsSet = lib.foldl lib.recursiveUpdate { } optsAcc;
       optsMod = let
-        declarations = ({ config, ... }: {
-          _file = "command line options definition";
-          options = slacOptions config [ ] slac;
-        });
+        declarations = optsDeclarations slac;
         prettyArgv = lib.generators.toPretty { multiline = false; } argv;
         definitions =
           (map (v: v // { _file = "command line arguments: ${prettyArgv}"; })
@@ -226,4 +229,24 @@ let
       inherit optsAcc optsSet optsMod opts;
     };
 
-in clap
+  clapDoc = slac: opts:
+    let
+      docs = lib.pipe (optsDeclarations slac) [
+        (x: builtins.trace (pretty x) x)
+        (module: lib.evalModules { modules = [ module ]; })
+        (lib.optionAttrSetToDocList)
+        (lib.filter (d: d.visible && !d.internal && !d.readOnly))
+        (map (d:
+          lib.setAttrByPath (lib.splitString "." d.name) {
+            inherit (d) default description type example;
+          }))
+        (lib.foldLeft (a: b: a // b) { })
+      ];
+      pretty = lib.generators.toPretty { };
+    in builtins.trace (pretty docs) (pretty docs);
+
+in slac:
+let
+  cli = clapParse slac;
+  doc = clapDoc slac;
+in (lib.setFunctionArgs cli (lib.functionArgs cli)) // { inherit doc; }
