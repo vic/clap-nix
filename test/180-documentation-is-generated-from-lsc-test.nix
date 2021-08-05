@@ -1,21 +1,22 @@
 { opts, typs, lib, ... }:
 
 {
-  name = "documentation is generated from lsc";
-  skip = "TODO: still working on doc generation";
-  fn = cli: argv: cli.doc { };
-  at = lib.id;
+  skip = "WIP";
+  name = "documentation is generated from slac";
+  fn = cli: argv: cli.docs;
+  at = (_: _.flatten { });
   slac = {
-    short.b = opts.val "y";
-    argv = [ (typs.val "A") ];
-
-    command.bar.enabled = true;
-    command.bar.argv = [ (typs.val "B") (typs.val "C") ];
+    long.foo = lib.mkEnableOption "Foo";
+    short.f = lib.mkOption {
+      description = "file to read";
+      type = lib.types.path;
+    };
+    command.moo.enabled = true;
+    command.moo.short.b = lib.mkOption {
+      description = "Bar";
+      default = "bar";
+      type = lib.types.str;
+    };
   };
-  expected = {
-    rest = [ ];
-    seen = ''
-      JO
-    '';
-  };
+  expected = [ ];
 }

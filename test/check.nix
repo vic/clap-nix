@@ -6,10 +6,12 @@ let
   cli = clap slac;
   actual = lib.pipe argv [
     (fn cli)
-    (result: {
-      rest = result.rest or [ ];
-      seen = at result;
-    })
+    (result:
+      if result ? rest then {
+        inherit (result) rest;
+        seen = at result;
+      } else
+        at result)
   ];
   same = actual == expected;
   msg = label: msg:

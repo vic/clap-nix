@@ -1,18 +1,19 @@
 { lib }:
 let
+  prettyOneLine = lib.generators.toPretty { multiline = false; };
   ensureOption = n: v:
-    let typeOfV = builtins.typeOf v;
+    let
+      typeOfV = builtins.typeOf v;
+      type = lib.types.${typeOfV} or lib.types.any;
     in if lib.isOption v then
       v
-    else if lib.hasAttr typeOfV lib.types then
+    else
       lib.mkOption {
         description = n;
         type = lib.types.${typeOfV};
         default = v;
-      }
-    else
-      throw
-      "Expected ${n} to be an option declared with `lib.mkOption` but was a ${typeOfV}";
+        defaultText = prettyOneLine v;
+      };
 
   hasPrefix = p: s: builtins.isString s && lib.hasPrefix p s;
 
@@ -179,7 +180,7 @@ let
       subOpt = at: fn:
         lib.optionalAttrs (lib.hasAttr at slac) {
           ${at} = lib.mkOption {
-            description = lib.concatStringsSep " " (cmdPath ++ [ at ]);
+            description = "clap-internal";
             default = { };
             type = lib.types.submodule (args:
               lib.optionalAttrs isCmdEnabled {
@@ -192,12 +193,15 @@ let
       shortOpt = subOpt "short" ensureOption;
       commandOpt = subOpt "command" (n: v:
         {
-          enabled = ensureOption n v.enabled or (lib.mkEnableOption n);
+          enabled = if v ? enabled then
+            ensureOption n v.enabled
+          else
+            lib.mkEnableOption n // { description = "clap-internal"; };
         } // slacOptions config (cmdPath ++ [ "command" n ]) v);
 
       argvOpt = lib.optionalAttrs (slac ? argv) {
         argv = lib.mkOption {
-          description = lib.concatStringsSep " " (cmdPath ++ [ "argv" ]);
+          description = "positional arguments";
           default = [ ];
           type = lib.types.listOf (lib.types.oneOf slac.argv);
         };
@@ -218,7 +222,7 @@ let
       optsSet = lib.foldl lib.recursiveUpdate { } optsAcc;
       optsMod = let
         declarations = optsDeclarations slac;
-        prettyArgv = lib.generators.toPretty { multiline = false; } argv;
+        prettyArgv = prettyOneLine argv;
         definitions =
           (map (v: v // { _file = "command line arguments: ${prettyArgv}"; })
             optsAcc);
@@ -229,24 +233,22 @@ let
       inherit optsAcc optsSet optsMod opts;
     };
 
-  clapDoc = slac: opts:
+  clapDoc = slac:
     let
-      docs = lib.pipe (optsDeclarations slac) [
-        (x: builtins.trace (pretty x) x)
-        (module: lib.evalModules { modules = [ module ]; })
-        (lib.optionAttrSetToDocList)
-        (lib.filter (d: d.visible && !d.internal && !d.readOnly))
-        (map (d:
-          lib.setAttrByPath (lib.splitString "." d.name) {
-            inherit (d) default description type example;
-          }))
-        (lib.foldLeft (a: b: a // b) { })
-      ];
-      pretty = lib.generators.toPretty { };
-    in builtins.trace (pretty docs) (pretty docs);
+      flatten = { atPath ? [ ] }:
+        lib.pipe (optsDeclarations slac) [
+          (module: lib.evalModules { modules = [ module ]; })
+          (_: _.options)
+          (lib.optionAttrSetToDocList)
+          (lib.filter (opt: opt.visible && !opt.internal))
+          (lib.filter (opt: (opt.description or "") != "clap-internal"))
+          (lib.filter (opt: atPath == lib.take (lib.length atPath) opt.loc))
+        ];
+    in { inherit flatten; };
 
 in slac:
 let
-  cli = clapParse slac;
-  doc = clapDoc slac;
-in (lib.setFunctionArgs cli (lib.functionArgs cli)) // { inherit doc; }
+  functor = f: lib.setFunctionArgs f (lib.functionArgs f);
+  clap = functor (clapParse slac);
+  docs = clapDoc slac;
+in clap // { inherit docs; }
