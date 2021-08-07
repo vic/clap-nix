@@ -154,14 +154,16 @@ let
     else if fstHere.longNo != null then
       accOpt slac rest (accAt fstHere.longNo false) (lib.tail argv)
 
-    else if fstHere.long != null && (lib.length argv == 1 || isDash snd) then
+    else if fstHere.long != null && (lib.length argv == 1 || isDash snd
+      || fstHere.long.opt.type.check true) then
       accOpt slac rest (accAt fstHere.long true) (lib.tail argv)
 
     else if fstHere.long != null then
       accOpt slac rest (accAt fstHere.long snd) (lib.drop 2 argv)
 
     else if fstHere.short != null && (lib.length argv == 1 || isDash snd
-      || builtins.length fstHere.short.rem > 0) then
+      || fstHere.short.opt.type.check true || builtins.length fstHere.short.rem
+      > 0) then
       accOpt slac rest (accAt fstHere.short true)
       (fstHere.short.rem ++ lib.tail argv)
 

@@ -5,6 +5,7 @@ rec {
   typs = { val = x: lib.types.addCheck lib.types.anything (y: y == x); };
 
   opts = {
+    bool = lib.mkOption { type = lib.types.bool; };
 
     int = lib.mkOption { type = lib.types.int; };
     zero = lib.mkOption {
