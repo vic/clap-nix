@@ -1,1 +1,1 @@
-{ pkgs, ... }: { clap = pkgs.callPackage ./lib { }; }
+{ pkgs, ... }: pkgs.callPackage ./lib { }
